@@ -7,154 +7,181 @@ export function useStore() {
 }
 
 export function StoreProvider({ children }) {
-  const [state, setState] = useState(() => {
-    const saved = localStorage.getItem('dashboard_state');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      isLoggedIn: false,
-      user: null,
-      currentBalance: 10000,
-      totalDeposited: 0,
-      totalWithdrawn: 0,
-      monthlyTarget: 15000,
-      deposits: [],
-      payouts: [],
-      growthData: null
-    };
+  const [state, setState] = useState({
+    isLoggedIn: false,
+    user: null,
+    currentBalance: 0,
+    totalDeposited: 0,
+    totalWithdrawn: 0,
+    monthlyTarget: 15000,
+    deposits: [],
+    payouts: [],
+    growthData: null
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Helper to talk to backend
+  const apiCall = async (endpoint, method = 'GET', body = null) => {
+    const options = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    const res = await fetch(`http://localhost:5000${endpoint}`, options);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || (data.errors && data.errors[0]?.msg) || 'API Error');
+    }
+    return data;
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const txData = await apiCall('/api/transactions');
+      setState(prev => ({
+        ...prev,
+        deposits: txData.data.deposits,
+        payouts: txData.data.payouts,
+        currentBalance: txData.data.currentBalance,
+        totalDeposited: txData.data.totalDeposited,
+        totalWithdrawn: txData.data.totalWithdrawn
+      }));
+    } catch (e) {
+      console.error('Failed to fetch transactions', e);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('dashboard_state', JSON.stringify(state));
-  }, [state]);
-
-  const login = (email, password) => {
-    setState(prev => ({ ...prev, isLoggedIn: true, user: { email } }));
-  };
-
-  const logout = () => {
-    setState(prev => ({ ...prev, isLoggedIn: false, user: null }));
-  };
-
-  const addDeposit = (amount, method) => {
-    const newDeposit = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      amount: parseFloat(amount),
-      method,
-      status: 'Completed'
+    const checkAuth = async () => {
+      try {
+        const data = await apiCall('/api/auth/me');
+        setState(prev => ({ 
+          ...prev, 
+          isLoggedIn: true, 
+          user: data.data,
+        }));
+        await fetchTransactions();
+      } catch (e) {
+        console.log('Not logged in', e.message);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setState(prev => ({
-      ...prev,
-      currentBalance: prev.currentBalance + newDeposit.amount,
-      totalDeposited: prev.totalDeposited + newDeposit.amount,
-      deposits: [newDeposit, ...prev.deposits]
+    checkAuth();
+  }, []);
+
+  const login = async (email, password) => {
+    const data = await apiCall('/api/auth/login', 'POST', { email, password });
+    setState(prev => ({ 
+      ...prev, 
+      isLoggedIn: true, 
+      user: data.user
     }));
+    await fetchTransactions();
   };
 
-  const requestPayout = (amount, method, details) => {
-    const newPayout = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      amount: parseFloat(amount),
-      method,
-      details,
-      status: 'Pending'
-    };
-    setState(prev => ({
-      ...prev,
-      currentBalance: prev.currentBalance - newPayout.amount,
-      payouts: [newPayout, ...prev.payouts]
+  const register = async (name, email, password) => {
+    const data = await apiCall('/api/auth/register', 'POST', { name, email, password });
+    setState(prev => ({ 
+      ...prev, 
+      isLoggedIn: true, 
+      user: data.user
     }));
+    await fetchTransactions();
   };
 
-  const approvePayout = (id) => {
-    setState(prev => {
-      const payouts = prev.payouts.map(p => {
-        if (p.id === id) return { ...p, status: 'Approved' };
-        return p;
-      });
-      const payout = prev.payouts.find(p => p.id === id);
-      return {
-        ...prev,
-        payouts,
-        totalWithdrawn: prev.totalWithdrawn + payout.amount
-      };
-    });
+  const logout = async () => {
+    try {
+      await apiCall('/api/auth/logout', 'POST');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setState(prev => ({ 
+        ...prev, 
+        isLoggedIn: false, 
+        user: null,
+        currentBalance: 0,
+        deposits: [],
+        payouts: []
+      }));
+    }
   };
 
-  const rejectPayout = (id) => {
-    setState(prev => {
-      const payouts = prev.payouts.map(p => {
-        if (p.id === id) return { ...p, status: 'Rejected' };
-        return p;
-      });
-      const payout = prev.payouts.find(p => p.id === id);
-      return {
-        ...prev,
-        payouts,
-        currentBalance: prev.currentBalance + payout.amount
-      };
-    });
+  const addDeposit = async (amount, method) => {
+    try {
+      await apiCall('/api/transactions/deposit', 'POST', { amount, method });
+      // Refresh transactions to show the new pending deposit
+      await fetchTransactions();
+    } catch (error) {
+      console.error('Deposit Error:', error);
+      alert(error.message);
+    }
+  };
+
+  const requestPayout = async (amount, method, details) => {
+    try {
+      await apiCall('/api/transactions/payout', 'POST', { amount, method, details });
+      await fetchTransactions();
+    } catch (error) {
+      console.error('Payout Error:', error);
+      alert(error.message);
+    }
   };
 
   const generateGrowthData = () => {
-    const totalGrowth = (Math.random() * 4 + 1).toFixed(2); // 1.00% to 5.00%
+    const totalGrowth = (Math.random() * 4 + 1).toFixed(2); 
     const now = new Date();
-    // use a random future month just to make it dynamic if user clicks multiple times
     const simMonth = Math.floor(Math.random() * 12);
     const numDaysInMonth = new Date(now.getFullYear(), simMonth + 1, 0).getDate();
     let weekdays = [];
     for (let i = 1; i <= numDaysInMonth; i++) {
-      const d = new Date(now.getFullYear(), simMonth, i);
-      if (d.getDay() !== 0 && d.getDay() !== 6) {
-        weekdays.push(`Day ${i}`);
-      }
+        const d = new Date(now.getFullYear(), simMonth, i);
+        if (d.getDay() !== 0 && d.getDay() !== 6) weekdays.push(`Day ${i}`);
     }
-    const numWeekdays = weekdays.length;
     
-    // Distribute totalGrowth randomly to sum exactly to totalGrowth
-    let randoms = Array.from({length: numWeekdays}, () => Math.random());
+    let randoms = Array.from({length: weekdays.length}, () => Math.random());
     let sumRandoms = randoms.reduce((a, b) => a + b, 0);
     let normalized = randoms.map(r => (r / sumRandoms) * parseFloat(totalGrowth));
-    
-    // Fix floating point sum rounding issues
-    let diff = parseFloat(totalGrowth) - normalized.reduce((a, b) => a + b, 0);
-    normalized[0] += diff;
+    normalized[0] += parseFloat(totalGrowth) - normalized.reduce((a, b) => a + b, 0);
 
     const monthsRaw = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    const daily = weekdays.map((day, ix) => ({
-      day,
-      pct: normalized[ix].toFixed(3),
-    }));
-
+    
     setState(prev => ({
       ...prev,
       growthData: {
         month: `${monthsRaw[simMonth]} ${now.getFullYear()}`,
         monthlyGrowthPct: totalGrowth,
-        daily
+        daily: weekdays.map((day, ix) => ({ day, pct: normalized[ix].toFixed(3) }))
       }
     }));
   };
 
   useEffect(() => {
-    if (!state.growthData) {
+    if (!state.growthData && state.isLoggedIn) {
       generateGrowthData();
     }
-  }, []);
+  }, [state.isLoggedIn]);
+
+  if (isLoading) {
+    return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
+  }
 
   return (
     <StoreContext.Provider value={{
       state,
       login,
+      register,
       logout,
       addDeposit,
       requestPayout,
-      approvePayout,
-      rejectPayout,
-      generateGrowthData
+      generateGrowthData,
+      fetchTransactions
     }}>
       {children}
     </StoreContext.Provider>
