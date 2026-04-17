@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
+const path = require('path');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 
@@ -47,29 +48,48 @@ app.use(cookieParser());
 
 // Admin Panel
 const setupAdmin = require('./admin');
-setupAdmin(app);
 
-// Route files
-const authRoutes = require('./routes/authRoutes');
-const transactionRoutes = require('./routes/transactionRoutes');
+const initializeServer = async () => {
+  await setupAdmin(app);
 
-// Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/transactions', transactionRoutes);
+  // Route files
+  const authRoutes = require('./routes/authRoutes');
+  const transactionRoutes = require('./routes/transactionRoutes');
 
-// Base route
-app.get('/', (req, res) => {
-  res.send('API is running...');
-});
+  // Mount routers
+  app.use('/api/auth', authRoutes);
+  app.use('/api/transactions', transactionRoutes);
 
-// Error handling middleware (basic)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ success: false, error: 'Server Error' });
-});
+  // Serve static assets if in production
+  if (process.env.NODE_ENV === 'production') {
+    // Set static folder
+    app.use(express.static(path.join(__dirname, '../dist')));
 
-const PORT = process.env.PORT || 5000;
+    // For any other routes not hit by the API or AdminJS, send the React app
+    app.get(/^.*$/, (req, res) => {
+      if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
+        return res.status(404).json({ success: false, error: 'Not found' });
+      }
+      res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+    });
+  } else {
+    // Base route for development
+    app.get('/', (req, res) => {
+      res.send('API is running... (Development Mode. Run Vite on port 5173)');
+    });
+  }
 
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+  // Error handling middleware (basic)
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  });
+
+  const PORT = process.env.PORT || 5000;
+
+  app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  });
+};
+
+initializeServer();

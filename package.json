@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "nodemon server/server.js",
+    "dev:all": "start vite & npm run dev:server",
     "build": "vite build",
+    "start": "node server/server.js",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "server": "nodemon server/server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@adminjs/express": "^6.1.1",
