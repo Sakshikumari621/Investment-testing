@@ -33,7 +33,8 @@ export function StoreProvider({ children }) {
       options.body = JSON.stringify(body);
     }
     
-    const res = await fetch(`http://localhost:5000${endpoint}`, options);
+    const BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
+    const res = await fetch(`${BASE_URL}${endpoint}`, options);
     const data = await res.json();
     if (!res.ok || !data.success) {
       throw new Error(data.error || (data.errors && data.errors[0]?.msg) || 'API Error');
