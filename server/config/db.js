@@ -10,7 +10,7 @@ const connectDB = async () => {
       console.log('Local MongoDB not found. Spinning up a temporary Cloud-like Memory Server...');
       const mongoServer = await MongoMemoryServer.create();
       const mongoUri = mongoServer.getUri();
-      
+
       const memoryConn = await mongoose.connect(mongoUri);
       console.log(`Memory MongoDB Connected successfully: ${memoryConn.connection.host}`);
     } else {

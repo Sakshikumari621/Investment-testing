@@ -93,12 +93,12 @@ const initializeServer = async () => {
   app.use((err, req, res, next) => {
     console.error(err.stack);
     const status = err.status || 500;
-    
+
     // Always return JSON for errors on API routes
     if (req.path.startsWith('/api')) {
       return res.status(status).json({ success: false, error: err.message || 'Server Error' });
     }
-    
+
     next(err);
   });
 
