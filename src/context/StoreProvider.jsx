@@ -13,10 +13,10 @@ export function StoreProvider({ children }) {
     currentBalance: 0,
     totalDeposited: 0,
     totalWithdrawn: 0,
-    monthlyTarget: 15000,
     deposits: [],
     payouts: [],
-    growthData: null
+    growthHistory: [],
+    totalGrowthEarned: 0
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -49,9 +49,11 @@ export function StoreProvider({ children }) {
         ...prev,
         deposits: txData.data.deposits,
         payouts: txData.data.payouts,
+        growthHistory: txData.data.growthHistory,
         currentBalance: txData.data.currentBalance,
         totalDeposited: txData.data.totalDeposited,
-        totalWithdrawn: txData.data.totalWithdrawn
+        totalWithdrawn: txData.data.totalWithdrawn,
+        totalGrowthEarned: txData.data.totalGrowthEarned
       }));
     } catch (e) {
       console.error('Failed to fetch transactions', e);
@@ -135,39 +137,7 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const generateGrowthData = () => {
-    const totalGrowth = (Math.random() * 4 + 1).toFixed(2); 
-    const now = new Date();
-    const simMonth = Math.floor(Math.random() * 12);
-    const numDaysInMonth = new Date(now.getFullYear(), simMonth + 1, 0).getDate();
-    let weekdays = [];
-    for (let i = 1; i <= numDaysInMonth; i++) {
-        const d = new Date(now.getFullYear(), simMonth, i);
-        if (d.getDay() !== 0 && d.getDay() !== 6) weekdays.push(`Day ${i}`);
-    }
-    
-    let randoms = Array.from({length: weekdays.length}, () => Math.random());
-    let sumRandoms = randoms.reduce((a, b) => a + b, 0);
-    let normalized = randoms.map(r => (r / sumRandoms) * parseFloat(totalGrowth));
-    normalized[0] += parseFloat(totalGrowth) - normalized.reduce((a, b) => a + b, 0);
-
-    const monthsRaw = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    
-    setState(prev => ({
-      ...prev,
-      growthData: {
-        month: `${monthsRaw[simMonth]} ${now.getFullYear()}`,
-        monthlyGrowthPct: totalGrowth,
-        daily: weekdays.map((day, ix) => ({ day, pct: normalized[ix].toFixed(3) }))
-      }
-    }));
-  };
-
-  useEffect(() => {
-    if (!state.growthData && state.isLoggedIn) {
-      generateGrowthData();
-    }
-  }, [state.isLoggedIn]);
+  // Removed frontend simulation in favor of real backend persistence
 
   if (isLoading) {
     return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
@@ -181,7 +151,6 @@ export function StoreProvider({ children }) {
       logout,
       addDeposit,
       requestPayout,
-      generateGrowthData,
       fetchTransactions
     }}>
       {children}

@@ -24,7 +24,7 @@ app.use(helmet({
       "style-src": ["'self'", "'unsafe-inline'"],
       "img-src": ["'self'", "data:", "blob:"],
       "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-      "connect-src": ["'self'"]
+      "connect-src": ["'self'", "http://localhost:5000", "http://127.0.0.1:5000"]
     }
   }
 }));

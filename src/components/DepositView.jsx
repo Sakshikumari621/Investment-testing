@@ -33,7 +33,15 @@ export default function DepositView() {
           
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
             <div style={{ background: 'white', padding: '16px', borderRadius: '12px' }}>
-              <QrCode size={150} color="black" />
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${
+                  method === 'crypto' 
+                  ? (import.meta.env.VITE_CRYPTO_ADDRESS || '0x71C7656EC7ab88b098defB751B7401B5f6d8976F') 
+                  : `upi://pay?pa=${import.meta.env.VITE_UPI_ID || 'admin@ybl'}`
+                }`} 
+                alt="Payment QR Code"
+                style={{ width: '150px', height: '150px', display: 'block' }}
+              />
             </div>
           </div>
           
@@ -54,7 +62,7 @@ export default function DepositView() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input 
                 type="text" 
-                value={method === 'crypto' ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' : 'admin@ybl'} 
+                value={method === 'crypto' ? (import.meta.env.VITE_CRYPTO_ADDRESS || '0x71C7656EC7ab88b098defB751B7401B5f6d8976F') : (import.meta.env.VITE_UPI_ID || 'admin@ybl')} 
                 readOnly 
               />
               <button className="btn-secondary" onClick={handleCopy} title="Copy">
@@ -110,7 +118,7 @@ export default function DepositView() {
             ) : (
               state.deposits.map(d => (
                 <tr key={d.id}>
-                  <td>{new Date(d.date).toLocaleString()}</td>
+                  <td>{new Date(d.createdAt).toLocaleString()}</td>
                   <td>{d.method}</td>
                   <td style={{ fontWeight: 'bold' }}>${d.amount.toFixed(2)}</td>
                   <td><span className={`badge badge-${d.status.toLowerCase()}`}>{d.status}</span></td>

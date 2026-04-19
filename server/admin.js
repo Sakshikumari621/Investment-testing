@@ -18,6 +18,7 @@ const setupAdmin = async (app) => {
     const User = require('./models/User');
     const Deposit = require('./models/Deposit');
     const Payout = require('./models/Payout');
+    const Growth = require('./models/Growth');
 
     const adminOptions = {
       databases: [mongoose],
@@ -34,7 +35,8 @@ const setupAdmin = async (app) => {
           }
         },
         Deposit,
-        Payout
+        Payout,
+        Growth
       ],
       branding: {
         companyName: 'Investment Portal',

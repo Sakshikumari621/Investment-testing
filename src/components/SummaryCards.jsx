@@ -11,6 +11,17 @@ export default function SummaryCards() {
 
   const pendingPayouts = state.payouts.filter(p => p.status === 'Pending').reduce((acc, p) => acc + p.amount, 0);
 
+  // Calculate current month's total growth percentage
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const monthlyPct = state.growthHistory
+    .filter(g => {
+      const d = new Date(g.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    })
+    .reduce((acc, curr) => acc + curr.percentage, 0);
+
   const cards = [
     { 
       title: 'Current Balance', 
@@ -37,14 +48,8 @@ export default function SummaryCards() {
       bg: 'rgba(139, 92, 246, 0.1)'
     },
     { 
-      title: 'Monthly Target', 
-      value: formatCurrency(state.monthlyTarget), 
-      icon: <Target size={24} color="#ef4444" />,
-      bg: 'rgba(239, 68, 68, 0.1)'
-    },
-    { 
-      title: "Month's Est. Growth", 
-      value: `${state.growthData?.monthlyGrowthPct || '0'}%`, 
+      title: "Portfolio Growth (Month)", 
+      value: `${monthlyPct.toFixed(2)}%`, 
       icon: <Activity size={24} color="#06b6d4" />,
       bg: 'rgba(6, 182, 212, 0.1)'
     }

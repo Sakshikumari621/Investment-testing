@@ -91,7 +91,7 @@ export default function PayoutView() {
             ) : (
               state.payouts.map(p => (
                 <tr key={p.id}>
-                  <td>{new Date(p.date).toLocaleString()}</td>
+                  <td>{new Date(p.createdAt).toLocaleString()}</td>
                   <td style={{ fontWeight: 'bold' }}>${p.amount.toFixed(2)}</td>
                   <td>{p.method} {p.details && `(${p.details.substring(0, 10)}...)`}</td>
                   <td><span className={`badge badge-${p.status.toLowerCase()}`}>{p.status}</span></td>
