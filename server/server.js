@@ -66,8 +66,8 @@ const initializeServer = async () => {
   app.use('/api/auth', authRoutes);
   app.use('/api/transactions', transactionRoutes);
 
-  // Explicitly handle 404s for API requests (Express 5 syntax)
-  app.all('/api/(.*)', (req, res) => {
+  // Explicitly handle 404s for API requests (Regex catch-all for Express 5 compatibility)
+  app.all(/^\/api\/.*$/, (req, res) => {
     res.status(404).json({ success: false, error: `API route not found: ${req.originalUrl}` });
   });
 
@@ -76,12 +76,8 @@ const initializeServer = async () => {
     const distPath = path.resolve(__dirname, '../dist');
     app.use(express.static(distPath));
 
-    // Catch-all for React SPA (Express 5 syntax)
-    app.get('(.*)', (req, res) => {
-      // Don't send index.html if it looks like an API or Admin request reaching here
-      if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
-        return res.status(404).json({ success: false, error: 'Not found' });
-      }
+    // Catch-all for React SPA (Regex catch-all for Express 5 compatibility)
+    app.get(/^((?!\/api|\/admin).)*$/, (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
