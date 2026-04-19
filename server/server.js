@@ -39,34 +39,48 @@ app.use(cors(corsOptions));
 // Body parser
 app.use(express.json());
 
+// Simple Request Logger for Production Debugging
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`${req.method} ${req.path}`);
+  }
+  next();
+});
+
 // Cookie parser
 app.use(cookieParser());
 
-// Admin Panel
+// Admin Panel (Mount first to ensure its routes are handled)
 const setupAdmin = require('./admin');
 
 const initializeServer = async () => {
   await setupAdmin(app);
 
-  // Route files
+  // API Routes
   const authRoutes = require('./routes/authRoutes');
   const transactionRoutes = require('./routes/transactionRoutes');
 
-  // Mount routers
   app.use('/api/auth', authRoutes);
   app.use('/api/transactions', transactionRoutes);
+
+  // Explicitly handle 404s for API requests to avoid falling through to HTML
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ success: false, error: `API route not found: ${req.originalUrl}` });
+  });
 
   // Serve static assets if in production
   if (process.env.NODE_ENV === 'production') {
     // Set static folder
-    app.use(express.static(path.join(__dirname, '../dist')));
+    const distPath = path.resolve(__dirname, '../dist');
+    app.use(express.static(distPath));
 
-    // For any other routes not hit by the API or AdminJS, send the React app
-    app.get(/^.*$/, (req, res) => {
+    // Catch-all for React SPA (Only for GET requests)
+    app.get('*', (req, res) => {
+      // Don't send index.html if it looks like an API or Admin request reaching here
       if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
         return res.status(404).json({ success: false, error: 'Not found' });
       }
-      res.sendFile(path.resolve(__dirname, '../dist', 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
     // Base route for development
@@ -75,10 +89,17 @@ const initializeServer = async () => {
     });
   }
 
-  // Error handling middleware (basic)
+  // Error handling middleware
   app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ success: false, error: 'Server Error' });
+    const status = err.status || 500;
+    
+    // Always return JSON for errors on API routes
+    if (req.path.startsWith('/api')) {
+      return res.status(status).json({ success: false, error: err.message || 'Server Error' });
+    }
+    
+    next(err);
   });
 
   const PORT = process.env.PORT || 5000;
