@@ -21,24 +21,20 @@ app.use(helmet({
     directives: {
       "default-src": ["'self'"],
       "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      "style-src": ["'self'", "'unsafe-inline'"],
-      "img-src": ["'self'", "data:", "blob:"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      "img-src": ["'self'", "data:", "blob:", "https://api.qrserver.com"],
       "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-      "connect-src": ["'self'", "http://localhost:5000", "http://127.0.0.1:5000"]
+      "connect-src": ["'self'", "http://localhost:5000", "http://127.0.0.1:5000", "*.mongodb.net"]
     }
   }
 }));
 
-
-
 // Enable CORS
-// Since the frontend is likely running on localhost:5173 (Vite default), we allow it.
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true // Allow cookies to be sent
-}));
-
-
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(express.json());
