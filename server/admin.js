@@ -61,16 +61,10 @@ const setupAdmin = async (app) => {
                 isVisible: { list: true, filter: true, show: true, edit: true }
               },
               panPhoto: {
-                isVisible: { list: false, filter: false, show: true, edit: false },
-                components: {
-                  show: Components.KYCImagePreview,
-                }
+                isVisible: { list: false, filter: false, show: true, edit: false }
               },
               aadhaarPhoto: {
-                isVisible: { list: false, filter: false, show: true, edit: false },
-                components: {
-                  show: Components.KYCImagePreview,
-                }
+                isVisible: { list: false, filter: false, show: true, edit: false }
               }
             },
             actions: {
