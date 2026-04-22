@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreProvider';
-import { LayoutDashboard, TrendingUp, CreditCard, Send, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, CreditCard, Send, LogOut, Menu, X, LifeBuoy } from 'lucide-react';
 import SummaryCards from './SummaryCards';
 import GrowthView from './GrowthView';
 import DepositView from './DepositView';
 import PayoutView from './PayoutView';
+import SupportView from './SupportView';
 import KYCResubmitForm from './KYCResubmitForm';
 import './Dashboard.css';
 
@@ -27,7 +28,8 @@ export default function Dashboard() {
   const tabs = [
     { id: 'growth', label: 'Investment Growth', icon: <TrendingUp size={20} /> },
     { id: 'deposit', label: 'Deposit Funds', icon: <CreditCard size={20} /> },
-    { id: 'payout', label: 'Payout Requests', icon: <Send size={20} /> }
+    { id: 'payout', label: 'Payout Requests', icon: <Send size={20} /> },
+    { id: 'support', label: 'Support', icon: <LifeBuoy size={20} /> }
   ];
 
   const handleTabClick = (tabId) => {
@@ -165,6 +167,7 @@ export default function Dashboard() {
             {activeTab === 'growth' && <GrowthView />}
             {activeTab === 'deposit' && <DepositView />}
             {activeTab === 'payout' && <PayoutView />}
+            {activeTab === 'support' && <SupportView />}
           </div>
         </div>
       </main>
