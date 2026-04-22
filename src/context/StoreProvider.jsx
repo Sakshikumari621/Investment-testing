@@ -16,27 +16,38 @@ export function StoreProvider({ children }) {
     deposits: [],
     payouts: [],
     growthHistory: [],
-    totalGrowthEarned: 0
+    totalGrowthEarned: 0,
+    currentBase: 0
   });
 
   const [isLoading, setIsLoading] = useState(true);
 
   // Helper to talk to backend
-  const apiCall = async (endpoint, method = 'GET', body = null) => {
+  const apiCall = async (endpoint, method = 'GET', body = null, isMultipart = false) => {
     const options = {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: isMultipart ? {} : { 'Content-Type': 'application/json' },
       credentials: 'include'
     };
-    
-    if (body) {
-      options.body = JSON.stringify(body);
+
+    // Add Authorization header if token exists in localStorage
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      options.headers['Authorization'] = `Bearer ${savedToken}`;
     }
     
-    const BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
+    if (body) {
+      options.body = isMultipart ? body : JSON.stringify(body);
+    }
+    
+    const BASE_URL = '';
     const res = await fetch(`${BASE_URL}${endpoint}`, options);
     const data = await res.json();
     if (!res.ok || !data.success) {
+      // If unauthorized, we might want to clear local storage
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+      }
       throw new Error(data.error || (data.errors && data.errors[0]?.msg) || 'API Error');
     }
     return data;
@@ -53,7 +64,8 @@ export function StoreProvider({ children }) {
         currentBalance: txData.data.currentBalance,
         totalDeposited: txData.data.totalDeposited,
         totalWithdrawn: txData.data.totalWithdrawn,
-        totalGrowthEarned: txData.data.totalGrowthEarned
+        totalGrowthEarned: txData.data.totalGrowthEarned,
+        currentBase: txData.data.currentBase
       }));
     } catch (e) {
       console.error('Failed to fetch transactions', e);
@@ -81,6 +93,12 @@ export function StoreProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await apiCall('/api/auth/login', 'POST', { email, password });
+    
+    // Save token for persistent sessions across refreshes
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+
     setState(prev => ({ 
       ...prev, 
       isLoggedIn: true, 
@@ -89,8 +107,13 @@ export function StoreProvider({ children }) {
     await fetchTransactions();
   };
 
-  const register = async (name, email, password) => {
-    const data = await apiCall('/api/auth/register', 'POST', { name, email, password });
+  const register = async (formData) => {
+    const data = await apiCall('/api/auth/register', 'POST', formData, true);
+    
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+
     setState(prev => ({ 
       ...prev, 
       isLoggedIn: true, 
@@ -105,6 +128,7 @@ export function StoreProvider({ children }) {
     } catch (e) {
       console.error(e);
     } finally {
+      localStorage.removeItem('token');
       setState(prev => ({ 
         ...prev, 
         isLoggedIn: false, 
@@ -116,9 +140,9 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const addDeposit = async (amount, method) => {
+  const addDeposit = async (amount, method, network) => {
     try {
-      await apiCall('/api/transactions/deposit', 'POST', { amount, method });
+      await apiCall('/api/transactions/deposit', 'POST', { amount, method, network });
       // Refresh transactions to show the new pending deposit
       await fetchTransactions();
     } catch (error) {
@@ -127,14 +151,23 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const requestPayout = async (amount, method, details) => {
+  const requestPayout = async (amount, method, details, network) => {
     try {
-      await apiCall('/api/transactions/payout', 'POST', { amount, method, details });
+      await apiCall('/api/transactions/payout', 'POST', { amount, method, details, network });
       await fetchTransactions();
     } catch (error) {
       console.error('Payout Error:', error);
       alert(error.message);
     }
+  };
+
+  const resubmitKYC = async (formData) => {
+    const data = await apiCall('/api/auth/resubmit-kyc', 'POST', formData, true);
+    setState(prev => ({ 
+      ...prev, 
+      user: { ...prev.user, kycStatus: data.data.kycStatus }
+    }));
+    return data;
   };
 
   // Removed frontend simulation in favor of real backend persistence
@@ -151,6 +184,7 @@ export function StoreProvider({ children }) {
       logout,
       addDeposit,
       requestPayout,
+      resubmitKYC,
       fetchTransactions
     }}>
       {children}

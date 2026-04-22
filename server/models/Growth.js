@@ -14,6 +14,10 @@ const growthSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  baseAmount: {
+    type: Number,
+    required: true
+  },
   date: {
     type: Date,
     required: true

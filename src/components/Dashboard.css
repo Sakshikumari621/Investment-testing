@@ -160,11 +160,32 @@
     left: 0;
     height: 100vh;
     transform: translateX(-100%);
+    /* Solid, rich background — no transparency on mobile */
+    background-color: #0f1e35;
+    border-right: 1px solid rgba(59, 130, 246, 0.15);
   }
 
   .sidebar.open {
     transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Brighter nav items on mobile so they stand out */
+  .sidebar .nav-item {
+    color: #cbd5e1;
+    font-size: 1rem;
+    padding: 14px 18px;
+  }
+
+  .sidebar .nav-item:hover {
+    background: rgba(59, 130, 246, 0.12);
+    color: #f8fafc;
+  }
+
+  .sidebar .nav-item.active {
+    background: rgba(59, 130, 246, 0.18);
+    color: #60a5fa;
+    font-weight: 700;
   }
 
   .mobile-close {
@@ -183,3 +204,4 @@
     margin: -24px -16px 24px -16px;
   }
 }
+

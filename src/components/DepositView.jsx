@@ -6,6 +6,7 @@ export default function DepositView() {
   const { state, addDeposit } = useStore();
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('crypto');
+  const [network, setNetwork] = useState(import.meta.env.VITE_CRYPTO_NETWORK || 'TRC20');
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -16,8 +17,9 @@ export default function DepositView() {
 
   const handleDeposit = () => {
     if (amount && Number(amount) > 0) {
-      addDeposit(amount, method.toUpperCase());
+      addDeposit(amount, method.toUpperCase(), network);
       setAmount('');
+      setNetwork(import.meta.env.VITE_CRYPTO_NETWORK || 'TRC20');
     }
   };
 
@@ -55,11 +57,23 @@ export default function DepositView() {
             </select>
           </div>
 
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              Network (optional)
+            </label>
+            <input 
+              type="text" 
+              placeholder="e.g. ERC20, TRC20, etc." 
+              value={network}
+              onChange={(e) => setNetwork(e.target.value)}
+            />
+          </div>
+
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               {method === 'crypto' ? 'Wallet Address' : 'UPI ID'}
             </label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: method === 'crypto' ? '16px' : '0' }}>
               <input 
                 type="text" 
                 value={method === 'crypto' ? (import.meta.env.VITE_CRYPTO_ADDRESS || '0x71C7656EC7ab88b098defB751B7401B5f6d8976F') : (import.meta.env.VITE_UPI_ID || 'admin@ybl')} 
@@ -106,6 +120,7 @@ export default function DepositView() {
             <tr>
               <th>Date</th>
               <th>Method</th>
+              <th>Network</th>
               <th>Amount</th>
               <th>Status</th>
             </tr>
@@ -113,13 +128,14 @@ export default function DepositView() {
           <tbody>
             {state.deposits.length === 0 ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No deposits yet.</td>
+                <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No deposits yet.</td>
               </tr>
             ) : (
               state.deposits.map(d => (
                 <tr key={d.id}>
                   <td>{new Date(d.createdAt).toLocaleString()}</td>
                   <td>{d.method}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{d.network || '-'}</td>
                   <td style={{ fontWeight: 'bold' }}>${d.amount.toFixed(2)}</td>
                   <td><span className={`badge badge-${d.status.toLowerCase()}`}>{d.status}</span></td>
                 </tr>

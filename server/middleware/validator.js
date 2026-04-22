@@ -4,7 +4,9 @@ const { check, validationResult } = require('express-validator');
 const registerValidation = [
   check('name', 'Name is required').not().isEmpty(),
   check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 })
+  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+  check('panNumber', 'Please enter a valid PAN number').matches(/[A-Z]{5}[0-9]{4}[A-Z]{1}/),
+  check('aadhaarNumber', 'Please enter a valid 12-digit Aadhaar number').matches(/^[2-9]{1}[0-9]{3}[0-9]{4}[0-9]{4}$/)
 ];
 
 // Login validation rules

@@ -30,6 +30,12 @@ export default function SummaryCards() {
       bg: 'rgba(59, 130, 246, 0.1)'
     },
     { 
+      title: 'Profit Base Amount', 
+      value: formatCurrency(state.currentBase), 
+      icon: <Target size={24} color="#ec4899" />,
+      bg: 'rgba(236, 72, 153, 0.1)'
+    },
+    { 
       title: 'Total Deposited', 
       value: formatCurrency(state.totalDeposited), 
       icon: <ArrowUpRight size={24} color="#10b981" />,

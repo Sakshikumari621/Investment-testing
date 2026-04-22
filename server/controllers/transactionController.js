@@ -47,12 +47,13 @@ const getGrowthSchedule = (year, month) => {
 // @access  Private
 exports.createDeposit = async (req, res) => {
   try {
-    const { amount, method } = req.body;
+    const { amount, method, network } = req.body;
 
     const deposit = await Deposit.create({
       user: req.user.id, // from protect middleware
       amount,
       method,
+      network: network || '',
       status: 'Pending' // Always pending so Admin can approve
     });
 
@@ -67,13 +68,14 @@ exports.createDeposit = async (req, res) => {
 // @access  Private
 exports.createPayout = async (req, res) => {
   try {
-    const { amount, method, details } = req.body;
+    const { amount, method, details, network } = req.body;
 
     const payout = await Payout.create({
       user: req.user.id,
       amount,
       method,
       details,
+      network: network || '',
       status: 'Pending'
     });
 
@@ -88,102 +90,117 @@ exports.createPayout = async (req, res) => {
 // @access  Private
 exports.getTransactions = async (req, res) => {
   try {
-    const deposits = await Deposit.find({ user: req.user.id }).sort({ createdAt: -1 });
-    const payouts = await Payout.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const deposits = await Deposit.find({ user: req.user.id }).sort({ createdAt: 1 });
+    const payouts = await Payout.find({ user: req.user.id }).sort({ createdAt: 1 });
+    const existingGrowth = await Growth.find({ user: req.user.id }).sort({ date: 1 });
 
-    // --- Dynamic Growth Catch-up Logic ---
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
-    const currentDay = now.getDate();
-    const growthSchedule = getGrowthSchedule(currentYear, currentMonth);
+    const today = new Date(currentYear, currentMonth, now.getDate());
 
-    // Find the earliest completed deposit to determine the growth start date
-    const completedDeposits = deposits.filter(d => d.status === 'Completed');
-    const earliestDeposit = [...completedDeposits].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
-    
-    // If no completed deposits, ensure no growth exists and skip
-    if (!earliestDeposit) {
-      await Growth.deleteMany({ user: req.user.id });
-    } else {
-      const growthStartDate = new Date(earliestDeposit.createdAt);
-      growthStartDate.setHours(0, 0, 0, 0);
-
-      // Clean up any growth records dated before the first deposit (Production Rule)
-      await Growth.deleteMany({ 
-        user: req.user.id, 
-        date: { $lt: growthStartDate } 
+    // Find first completed deposit
+    const firstDeposit = deposits.find(d => d.status === 'Completed');
+    if (!firstDeposit) {
+      return res.status(200).json({
+        success: true,
+        data: { deposits, payouts, growthHistory: [], currentBalance: 0, totalDeposited: 0, totalWithdrawn: 0, totalGrowthEarned: 0 }
       });
+    }
 
-      // Get existing growth for THIS month
-      const startOfMonth = new Date(currentYear, currentMonth, 1);
-      const existingGrowth = await Growth.find({
-        user: req.user.id,
-        date: { $gte: startOfMonth }
-      });
-      const existingDays = new Set(existingGrowth.map(g => g.date.getDate()));
+    let runningBalance = 0;
+    let runningBase = 0;
+    let totalGrowthEarned = 0;
+    let growthHistory = [];
 
-      // Apply growth for any missing weekdays up to today
-      for (const dayStr in growthSchedule) {
-        const day = parseInt(dayStr);
-        const dayDate = new Date(currentYear, currentMonth, day);
+    // Helper to process a specific date for transactions
+    const getTransactionsForDay = (date) => {
+      const start = new Date(date).setHours(0, 0, 0, 0);
+      const end = new Date(date).setHours(23, 59, 59, 999);
+      
+      const dayDeps = deposits.filter(d => d.status === 'Completed' && d.createdAt >= start && d.createdAt <= end);
+      const dayPays = payouts.filter(p => p.status === 'Approved' && p.createdAt >= start && p.createdAt <= end);
+      
+      return { dayDeps, dayPays };
+    };
+
+    // --- RECONSTRUCTION ENGINE ---
+    // We start from the day of the first deposit and simulate growth up to today
+    let iterDate = new Date(firstDeposit.createdAt);
+    iterDate.setHours(0, 0, 0, 0);
+
+    while (iterDate <= today) {
+      const { dayDeps, dayPays } = getTransactionsForDay(iterDate);
+      
+      // 1. Process Deposits & Withdrawals (Impacts Base Immediately)
+      let hadWithdrawal = dayPays.length > 0;
+      let hadDeposit = dayDeps.length > 0;
+
+      for (const d of dayDeps) runningBalance += d.amount;
+      for (const p of dayPays) runningBalance -= p.amount;
+
+      if (hadWithdrawal || hadDeposit || runningBase === 0) {
+        runningBase = Math.floor(runningBalance / 500) * 500;
+      }
+
+      // 2. Process Growth (Weekdays Only)
+      const isWeekday = iterDate.getDay() !== 0 && iterDate.getDay() !== 6;
+      if (isWeekday) {
+        // Find existing record or create new one
+        let growthRecord = existingGrowth.find(g => g.date.toDateString() === iterDate.toDateString());
         
-        // Only apply if the day is >= the first deposit date
-        if (day <= currentDay && !existingDays.has(day) && dayDate >= growthStartDate) {
-          // Calculate balance up to this point
-          const dateLimit = new Date(currentYear, currentMonth, day, 23, 59, 59);
-          
-          const depSoFar = deposits
-            .filter(d => d.status === 'Completed' && d.createdAt <= dateLimit)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-          const paySoFar = payouts
-            .filter(p => p.status === 'Approved' && p.createdAt <= dateLimit)
-            .reduce((acc, curr) => acc + curr.amount, 0);
-          const growthSoFar = (await Growth.find({ user: req.user.id, date: { $lt: new Date(currentYear, currentMonth, day) } }))
-            .reduce((acc, curr) => acc + curr.amount, 0);
+        if (!growthRecord && iterDate < today) {
+          // Calculate new growth
+          const schedule = getGrowthSchedule(iterDate.getFullYear(), iterDate.getMonth());
+          const dailyPct = schedule[iterDate.getDate()];
+          const growthAmount = runningBase * (dailyPct / 100);
 
-          const balanceToday = depSoFar - paySoFar + growthSoFar;
-          const dailyPct = growthSchedule[day];
-          const growthAmount = balanceToday * (dailyPct / 100);
-
-          await Growth.create({
+          growthRecord = await Growth.create({
             user: req.user.id,
             amount: growthAmount,
             percentage: dailyPct,
-            date: dayDate
+            baseAmount: runningBase,
+            date: new Date(iterDate)
           });
         }
+
+        if (growthRecord) {
+          runningBalance += growthRecord.amount;
+          totalGrowthEarned += growthRecord.amount;
+          growthHistory.push(growthRecord);
+
+          // Check if balance hit next step upward (+500)
+          if (runningBalance >= (runningBase + 500)) {
+            runningBase = Math.floor(runningBalance / 500) * 500;
+          }
+        }
       }
+
+      // Move to next day
+      iterDate.setDate(iterDate.getDate() + 1);
     }
 
-    // Refresh growth tokens after potential creations
-    const allGrowth = await Growth.find({ user: req.user.id }).sort({ date: -1 });
-
-    // Calculate real balance including growth
-    const totalDeposited = deposits
-      .filter(d => d.status === 'Completed')
-      .reduce((acc, curr) => acc + curr.amount, 0);
-
-    const totalWithdrawn = payouts
-      .filter(p => p.status === 'Approved')
-      .reduce((acc, curr) => acc + curr.amount, 0);
-
-    const totalGrowthEarned = allGrowth.reduce((acc, curr) => acc + curr.amount, 0);
-    const currentBalance = totalDeposited - totalWithdrawn + totalGrowthEarned;
+    // Update user's current runningBase and balance for display stability
+    await User.findByIdAndUpdate(req.user.id, { 
+      balance: runningBalance,
+      baseAmount: runningBase 
+    });
 
     res.status(200).json({
       success: true,
       data: {
-        deposits,
-        payouts,
-        growthHistory: allGrowth,
-        currentBalance,
-        totalDeposited,
-        totalWithdrawn,
+        deposits: deposits.sort((a,b) => b.createdAt - a.createdAt),
+        payouts: payouts.sort((a,b) => b.createdAt - a.createdAt),
+        growthHistory: growthHistory.reverse(),
+        currentBalance: runningBalance,
+        currentBase: runningBase,
+        totalDeposited: deposits.filter(d => d.status === 'Completed').reduce((acc, d) => acc + d.amount, 0),
+        totalWithdrawn: payouts.filter(p => p.status === 'Approved').reduce((acc, p) => acc + p.amount, 0),
         totalGrowthEarned
       }
     });
   } catch (error) {
+    console.error('getTransactions Error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };

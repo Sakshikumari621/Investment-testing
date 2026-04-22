@@ -14,6 +14,10 @@ const depositSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a deposit method']
   },
+  network: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     enum: ['Pending', 'Completed', 'Failed'],

@@ -7,14 +7,16 @@ export default function PayoutView() {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('bank');
   const [details, setDetails] = useState('');
+  const [network, setNetwork] = useState('');
 
   const availableBalance = state.currentBalance;
 
   const handleRequest = () => {
     if (amount && Number(amount) > 0 && Number(amount) <= availableBalance && details) {
-      requestPayout(amount, method.toUpperCase(), details);
+      requestPayout(amount, method.toUpperCase(), details, network);
       setAmount('');
       setDetails('');
+      setNetwork('');
     }
   };
 
@@ -50,6 +52,18 @@ export default function PayoutView() {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              Network (optional)
+            </label>
+            <input 
+              type="text" 
+              placeholder="e.g. ERC20, TRC20, etc." 
+              value={network}
+              onChange={(e) => setNetwork(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Account Details
             </label>
             <input 
@@ -79,6 +93,7 @@ export default function PayoutView() {
               <th>Date</th>
               <th>Amount</th>
               <th>Method</th>
+              <th>Network</th>
               <th>Status</th>
               <th>Admin Controls</th>
             </tr>
@@ -86,7 +101,7 @@ export default function PayoutView() {
           <tbody>
             {state.payouts.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No payout requests yet.</td>
+                <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>No payout requests yet.</td>
               </tr>
             ) : (
               state.payouts.map(p => (
@@ -94,6 +109,7 @@ export default function PayoutView() {
                   <td>{new Date(p.createdAt).toLocaleString()}</td>
                   <td style={{ fontWeight: 'bold' }}>${p.amount.toFixed(2)}</td>
                   <td>{p.method} {p.details && `(${p.details.substring(0, 10)}...)`}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{p.network || '-'}</td>
                   <td><span className={`badge badge-${p.status.toLowerCase()}`}>{p.status}</span></td>
                   <td>
                     {p.status === 'Pending' ? (

@@ -14,6 +14,10 @@ const payoutSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a payout method']
   },
+  network: {
+    type: String,
+    default: ''
+  },
   details: {
     type: String
   },

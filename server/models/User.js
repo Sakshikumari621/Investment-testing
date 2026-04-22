@@ -27,16 +27,65 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  baseAmount: {
+    type: Number,
+    default: 0
+  },
+  // --- KYC FIELDS ---
+  panNumber: {
+    type: String, // Stored encrypted
+    required: [true, 'Please provide a PAN number']
+  },
+  aadhaarNumber: {
+    type: String, // Stored encrypted
+    required: [true, 'Please provide an Aadhaar number']
+  },
+  panPhoto: {
+    type: String, // File path
+    required: [true, 'Please upload PAN card photo']
+  },
+  aadhaarPhoto: {
+    type: String, // File path
+    required: [true, 'Please upload Aadhaar card photo']
+  },
+  kycStatus: {
+    type: String,
+    enum: ['Pending', 'Approved', 'Rejected', 'Partially Approved'],
+    default: 'Pending'
+  },
+  panVerified: {
+    type: Boolean,
+    default: false
+  },
+  aadhaarVerified: {
+    type: Boolean,
+    default: false
+  },
+  kycRejectionReason: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Encrypt password using bcrypt before saving
-userSchema.pre('save', async function(next) {
+// Encrypt password and sync KYC status before saving
+userSchema.pre('save', async function() {
+  // Sync KYC Status based on verification flags
+  if (this.panVerified && this.aadhaarVerified) {
+    this.kycStatus = 'Approved';
+  } else if (this.panVerified || this.aadhaarVerified) {
+    // Only set to Partially Approved if it's currently Pending or already Partially Approved
+    // (Don't overwrite 'Rejected' or 'Approved' accidentally if one flag is lowered)
+    if (this.kycStatus === 'Pending' || this.kycStatus === 'Partially Approved') {
+      this.kycStatus = 'Partially Approved';
+    }
+  }
+
   if (!this.isModified('password')) {
-    next();
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);

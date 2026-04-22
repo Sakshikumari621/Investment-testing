@@ -4,8 +4,8 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
   let token;
 
-  // Check for token in cookies first, then in Authorization header
-  if (req.cookies.token) {
+  // 1. Check for token in cookies first, then in Authorization header
+  if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
   } else if (
     req.headers.authorization &&
@@ -14,8 +14,12 @@ const protect = async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  // Make sure token exists
+  // 2. If no token, but we have an admin session, we allow it (for admin document access)
+  // but we should still try to find the user if possible.
   if (!token) {
+    if (req.session && req.session.adminUser) {
+      return next();
+    }
     return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
   }
 
@@ -27,12 +31,20 @@ const protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id);
     
     if (!req.user) {
+      // If user not found but admin session exists, still allow
+      if (req.session && req.session.adminUser) {
+        return next();
+      }
       return res.status(401).json({ success: false, error: 'User not found' });
     }
 
     next();
   } catch (err) {
-    return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
+    // If token error but admin session exists, still allow
+    if (req.session && req.session.adminUser) {
+      return next();
+    }
+    return res.status(401).json({ success: false, error: 'Not authorized' });
   }
 };
 

@@ -5,6 +5,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const helmet = require('helmet');
+const session = require('express-session');
+const { MongoStore } = require('connect-mongo');
 
 // Load env vars
 dotenv.config();
@@ -20,11 +22,14 @@ app.use(helmet({
       "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       "img-src": ["'self'", "data:", "blob:", "https://api.qrserver.com"],
-      "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-      "connect-src": ["'self'", "http://localhost:5000", "http://127.0.0.1:5000", "*.mongodb.net"]
+      "font-src": ["'self'", "data:", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      "connect-src": ["'self'", "https://*.mongodb.net"]
     }
   }
 }));
+
+// Serve uploaded files statically (Admin uses this to verify files)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Enable CORS
 const corsOptions = {
@@ -56,6 +61,23 @@ const initializeServer = async () => {
   // Connect to database
   await connectDB();
   
+  // Session middleware
+  app.use(session({
+    name: 'investment_sid', // Unique name to prevent conflicts
+    secret: process.env.JWT_SECRET || 'secret_key',
+    resave: false,
+    saveUninitialized: true,
+    store: MongoStore.create({ 
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: 'sessions'
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    }
+  }));
+
   // Setup AdminJS
   await setupAdmin(app);
 
