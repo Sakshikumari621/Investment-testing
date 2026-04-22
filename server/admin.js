@@ -129,7 +129,12 @@ const setupAdmin = async (app) => {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     const sessionSecret = process.env.JWT_SECRET || 'adminjs_session_secret_change_me_in_prod';
-    console.log(`[AdminJS] Admin credentials loaded. Email: ${adminEmail}`);
+    
+    if (process.env.ADMIN_EMAIL) {
+      console.log(`[AdminJS] SUCCESS: Found ADMIN_EMAIL in environment: ${adminEmail}`);
+    } else {
+      console.log('[AdminJS] WARNING: ADMIN_EMAIL not found in environment, using default admin@example.com');
+    }
 
     const router = AdminJSExpress.buildAuthenticatedRouter(admin, {
       authenticate: async (email, password) => {
@@ -157,7 +162,7 @@ const setupAdmin = async (app) => {
         httpOnly: true,
         // secure must be true on HTTPS (Render), false on local HTTP
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax', // 'lax' is safer and more standard for same-domain production apps
         maxAge: 1000 * 60 * 60 * 24, // 24 hours
       }
     });
