@@ -24,10 +24,10 @@ export default function SummaryCards() {
 
   const cards = [
     { 
-      title: 'Current Balance', 
-      value: formatCurrency(state.currentBalance), 
-      icon: <DollarSign size={24} color="#3b82f6" />,
-      bg: 'rgba(59, 130, 246, 0.1)'
+      title: 'Total Deposited', 
+      value: formatCurrency(state.totalDeposited), 
+      icon: <ArrowUpRight size={24} color="#10b981" />,
+      bg: 'rgba(16, 185, 129, 0.1)'
     },
     { 
       title: 'Profit Base Amount', 
@@ -36,10 +36,10 @@ export default function SummaryCards() {
       bg: 'rgba(236, 72, 153, 0.1)'
     },
     { 
-      title: 'Total Deposited', 
-      value: formatCurrency(state.totalDeposited), 
-      icon: <ArrowUpRight size={24} color="#10b981" />,
-      bg: 'rgba(16, 185, 129, 0.1)'
+      title: 'Current Balance', 
+      value: formatCurrency(state.currentBalance), 
+      icon: <DollarSign size={24} color="#3b82f6" />,
+      bg: 'rgba(59, 130, 246, 0.1)'
     },
     { 
       title: 'Total Withdrawn', 

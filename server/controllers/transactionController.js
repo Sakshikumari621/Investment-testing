@@ -104,7 +104,7 @@ exports.getTransactions = async (req, res) => {
     if (!firstDeposit) {
       return res.status(200).json({
         success: true,
-        data: { deposits, payouts, growthHistory: [], currentBalance: 0, totalDeposited: 0, totalWithdrawn: 0, totalGrowthEarned: 0 }
+        data: { deposits, payouts, growthHistory: [], currentBalance: 0, currentBase: 0, totalDeposited: 0, totalWithdrawn: 0, totalGrowthEarned: 0 }
       });
     }
 

@@ -61,11 +61,11 @@ export function StoreProvider({ children }) {
         deposits: txData.data.deposits,
         payouts: txData.data.payouts,
         growthHistory: txData.data.growthHistory,
-        currentBalance: txData.data.currentBalance,
-        totalDeposited: txData.data.totalDeposited,
-        totalWithdrawn: txData.data.totalWithdrawn,
-        totalGrowthEarned: txData.data.totalGrowthEarned,
-        currentBase: txData.data.currentBase
+        currentBalance: txData.data.currentBalance || 0,
+        totalDeposited: txData.data.totalDeposited || 0,
+        totalWithdrawn: txData.data.totalWithdrawn || 0,
+        totalGrowthEarned: txData.data.totalGrowthEarned || 0,
+        currentBase: txData.data.currentBase || 0
       }));
     } catch (e) {
       console.error('Failed to fetch transactions', e);
