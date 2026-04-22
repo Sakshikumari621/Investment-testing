@@ -13,6 +13,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for secure cookies on Render
+app.set('trust proxy', 1);
+
 // Basic Security
 app.use(helmet({
   contentSecurityPolicy: {
