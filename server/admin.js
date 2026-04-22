@@ -33,14 +33,14 @@ const setupAdmin = async (app) => {
           resource: User,
           options: {
             properties: {
-              password: { 
+              password: {
                 isVisible: { list: false, filter: false, show: false, edit: false, new: true }
               },
-              panNumber: { 
+              panNumber: {
                 type: 'string',
                 isVisible: { list: false, filter: true, show: true, edit: false }
               },
-              aadhaarNumber: { 
+              aadhaarNumber: {
                 type: 'string',
                 isVisible: { list: false, filter: true, show: true, edit: false }
               },
