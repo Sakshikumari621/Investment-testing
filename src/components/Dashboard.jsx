@@ -50,7 +50,7 @@ export default function Dashboard() {
         <div className="sidebar-header">
           <div className="logo" onClick={goToDashboard} style={{ cursor: 'pointer' }} title="Back to Dashboard">
             <LayoutDashboard size={24} color="var(--accent-primary)" />
-            <span className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>InvestPro</span>
+            <span className="text-gradient" style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>GoldBaba</span>
           </div>
           <button className="mobile-close" onClick={() => setMobileMenuOpen(false)}>
             <X size={24} />
@@ -98,7 +98,7 @@ export default function Dashboard() {
         <header className="mobile-header glass-panel">
           <div className="logo" onClick={goToDashboard} style={{ cursor: 'pointer' }} title="Back to Dashboard">
             <LayoutDashboard size={24} color="var(--accent-primary)" />
-            <span className="text-gradient" style={{ fontWeight: 'bold' }}>InvestPro</span>
+            <span className="text-gradient" style={{ fontWeight: 'bold' }}>GoldBaba</span>
           </div>
           <button className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
             <Menu size={24} />

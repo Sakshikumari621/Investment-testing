@@ -2,7 +2,7 @@ import React from 'react';
 import { Mail, MessageCircle, Clock, ShieldCheck } from 'lucide-react';
 
 export default function SupportView() {
-  const supportEmail = "support@investpro.com"; // You can change this to your actual support email
+  const supportEmail = "support@goldbaba.com"; // You can change this to your actual support email
 
   return (
     <div className="support-view animate-fade-in">

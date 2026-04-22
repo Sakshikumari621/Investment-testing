@@ -117,7 +117,7 @@ const setupAdmin = async (app) => {
         { resource: Growth }
       ],
       branding: {
-        companyName: 'Investment Portal',
+        companyName: 'GoldBaba Portal',
         withMadeWithLove: false
       }
     };
