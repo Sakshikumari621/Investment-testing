@@ -7,7 +7,6 @@ const setupAdmin = async (app) => {
     // Dynamic import to handle pure ESM adminjs packages in CommonJS
     const AdminJSModule = await import('adminjs');
     const AdminJS = AdminJSModule.default;
-    const { ComponentLoader } = AdminJSModule;
     const AdminJSExpressModule = await import('@adminjs/express');
     const AdminJSExpress = AdminJSExpressModule.default;
     const AdminJSMongooseModule = await import('@adminjs/mongoose');
@@ -56,11 +55,11 @@ const setupAdmin = async (app) => {
               },
               panPhoto: {
                 isVisible: { list: false, filter: false, show: true, edit: false },
-                description: 'Copy and open this filename in the documents URL to view.'
+                description: 'Copy the filename below and open in browser: https://investment-testing.onrender.com/api/auth/documents/[FILENAME]'
               },
               aadhaarPhoto: {
                 isVisible: { list: false, filter: false, show: true, edit: false },
-                description: 'Copy and open this filename in the documents URL to view.'
+                description: 'Copy the filename below and open in browser: https://investment-testing.onrender.com/api/auth/documents/[FILENAME]'
               }
             },
             actions: {
