@@ -28,7 +28,7 @@ const setupAdmin = async (app) => {
 
     const componentLoader = new ComponentLoader();
     const Components = {
-      KYCImagePreview: componentLoader.add('KYCImagePreview', path.join(__dirname, 'components/KYCImagePreview.js')),
+      KYCImagePreview: componentLoader.add('KYCImagePreview', path.join(__dirname, 'components/KYCImagePreview.jsx')),
     };
 
     const adminOptions = {
