@@ -68,19 +68,47 @@ exports.createDeposit = async (req, res) => {
 // @access  Private
 exports.createPayout = async (req, res) => {
   try {
-    const { amount, method, details, network } = req.body;
+    const { 
+      amount, 
+      method, 
+      network, 
+      accountHolderName, 
+      accountNumber, 
+      bankName, 
+      ifscCode, 
+      branchName, 
+      upiId, 
+      walletAddress 
+    } = req.body;
+
+    // Safety check: verify current balance first
+    const user = await User.findById(req.user.id);
+    if (user.balance < amount) {
+      return res.status(400).json({ success: false, error: 'Insufficient balance' });
+    }
 
     const payout = await Payout.create({
       user: req.user.id,
       amount,
       method,
-      details,
       network: network || '',
+      accountHolderName: accountHolderName || '',
+      accountNumber: accountNumber || '',
+      bankName: bankName || '',
+      ifscCode: ifscCode || '',
+      branchName: branchName || '',
+      upiId: upiId || '',
+      walletAddress: walletAddress || '',
+      // Compile a summary details string for backward compatibility
+      details: method === 'BANK' 
+        ? `${bankName}: ${accountNumber}` 
+        : method === 'CRYPTO' ? walletAddress : upiId,
       status: 'Pending'
     });
 
     res.status(201).json({ success: true, data: payout });
   } catch (error) {
+    console.error('createPayout Error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };

@@ -113,7 +113,22 @@ const setupAdmin = async (app) => {
           }
         },
         { resource: Deposit },
-        { resource: Payout },
+        { 
+          resource: Payout,
+          options: {
+            properties: {
+              accountHolderName: { isVisible: { list: false, filter: true, show: true, edit: true } },
+              accountNumber: { isVisible: { list: true, filter: true, show: true, edit: true } },
+              bankName: { isVisible: { list: true, filter: true, show: true, edit: true } },
+              ifscCode: { isVisible: { list: false, filter: true, show: true, edit: true } },
+              branchName: { isVisible: { list: false, filter: true, show: true, edit: true } },
+              upiId: { isVisible: { list: true, filter: true, show: true, edit: true } },
+              walletAddress: { isVisible: { list: true, filter: true, show: true, edit: true } },
+              network: { isVisible: { list: true, filter: true, show: true, edit: true } },
+              details: { isVisible: { list: false, filter: false, show: true, edit: false } }
+            }
+          }
+        },
         { resource: Growth }
       ],
       branding: {

@@ -18,6 +18,16 @@ const payoutSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Bank Details
+  accountHolderName: { type: String, default: '' },
+  accountNumber: { type: String, default: '' },
+  bankName: { type: String, default: '' },
+  ifscCode: { type: String, default: '' },
+  branchName: { type: String, default: '' },
+  // UPI
+  upiId: { type: String, default: '' },
+  // Crypto
+  walletAddress: { type: String, default: '' },
   details: {
     type: String
   },

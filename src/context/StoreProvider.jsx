@@ -151,9 +151,9 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const requestPayout = async (amount, method, details, network) => {
+  const requestPayout = async (payoutData) => {
     try {
-      await apiCall('/api/transactions/payout', 'POST', { amount, method, details, network });
+      await apiCall('/api/transactions/payout', 'POST', payoutData);
       await fetchTransactions();
     } catch (error) {
       console.error('Payout Error:', error);
