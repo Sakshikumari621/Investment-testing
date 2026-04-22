@@ -26,9 +26,15 @@ const setupAdmin = async (app) => {
 
     const { decrypt } = require('./utils/cryptoUtils');
 
+    const componentLoader = new ComponentLoader();
+    const Components = {
+      KYCImagePreview: componentLoader.add('KYCImagePreview', path.join(__dirname, 'components/KYCImagePreview.js')),
+    };
+
     const adminOptions = {
       databases: [mongoose],
       rootPath: '/admin',
+      componentLoader,
       resources: [
         {
           resource: User,
@@ -55,10 +61,16 @@ const setupAdmin = async (app) => {
                 isVisible: { list: true, filter: true, show: true, edit: true }
               },
               panPhoto: {
-                isVisible: { list: false, filter: false, show: true, edit: false }
+                isVisible: { list: false, filter: false, show: true, edit: false },
+                components: {
+                  show: Components.KYCImagePreview,
+                }
               },
               aadhaarPhoto: {
-                isVisible: { list: false, filter: false, show: true, edit: false }
+                isVisible: { list: false, filter: false, show: true, edit: false },
+                components: {
+                  show: Components.KYCImagePreview,
+                }
               }
             },
             actions: {
