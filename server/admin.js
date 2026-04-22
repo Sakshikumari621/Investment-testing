@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { MongoStore } = require('connect-mongo');
 
 const setupAdmin = async (app) => {
   try {
@@ -125,17 +126,40 @@ const setupAdmin = async (app) => {
 
     // Build routes
     console.log('--- AdminJS: Building authenticated router ---');
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const sessionSecret = process.env.JWT_SECRET || 'adminjs_session_secret_change_me_in_prod';
+    console.log(`[AdminJS] Admin credentials loaded. Email: ${adminEmail}`);
+
     const router = AdminJSExpress.buildAuthenticatedRouter(admin, {
       authenticate: async (email, password) => {
-        const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+        console.log(`[AdminJS] Login attempt — email: ${email}`);
         if (email === adminEmail && password === adminPassword) {
+          console.log('[AdminJS] Login SUCCESS');
           return { email, role: 'admin' };
         }
+        console.log('[AdminJS] Login FAILED — wrong credentials');
         return false;
       },
-      cookieName: 'adminjs_cookie',
-      cookiePassword: process.env.JWT_SECRET || 'some_secret_password_for_cookies_123456789',
+      cookieName: 'adminjs_session',
+      cookiePassword: sessionSecret,
+    }, null, {
+      // Use MongoStore so sessions survive server restarts on Render
+      store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'adminSessions',
+        ttl: 60 * 60 * 24, // 24 hours
+      }),
+      resave: false,
+      saveUninitialized: false,
+      secret: sessionSecret,
+      cookie: {
+        httpOnly: true,
+        // secure must be true on HTTPS (Render), false on local HTTP
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      }
     });
 
     app.use(admin.options.rootPath, router);
