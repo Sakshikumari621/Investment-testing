@@ -154,18 +154,21 @@
 }
 
 @media (max-width: 768px) {
-  .sidebar {
+  .sidebar.glass-panel {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
     transform: translateX(-100%);
     /* Solid, rich background — no transparency on mobile */
-    background-color: #0f1e35;
+    background: #0f1e35;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-right: 1px solid rgba(59, 130, 246, 0.15);
+    z-index: 1000;
   }
 
-  .sidebar.open {
+  .sidebar.glass-panel.open {
     transform: translateX(0);
     box-shadow: 8px 0 40px rgba(0, 0, 0, 0.7);
   }
